@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-950 text-slate-100 antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid #7dd3fc;
+  outline-offset: 2px;
+}
+
+/* Grilla MDR */
+.lumon-cell {
+  @apply absolute top-0 flex select-none items-center justify-center font-mono text-sm;
+}
+
+.lumon-scary {
+  @apply font-bold text-white;
+  animation: lumon-tremor 0.5s linear infinite;
+}
+.lumon-scary-1 {
+  --amp: 0.6px;
+  animation-duration: 0.6s;
+}
+.lumon-scary-2 {
+  --amp: 1.2px;
+  animation-duration: 0.4s;
+}
+.lumon-scary-3 {
+  --amp: 2px;
+  animation-duration: 0.25s;
+}
+
+@keyframes lumon-tremor {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(calc(var(--amp) * -1), var(--amp));
+  }
+  50% {
+    transform: translate(var(--amp), calc(var(--amp) * -1));
+  }
+  75% {
+    transform: translate(calc(var(--amp) * -1), calc(var(--amp) * -1));
+  }
+}
+
+/* Sin movimiento: las celdas que dan miedo se distinguen por borde y subrayado. */
+@media (prefers-reduced-motion: reduce) {
+  .lumon-scary {
+    animation: none;
+    text-decoration: underline;
+    outline: 1px dashed #fbbf24;
+    outline-offset: -3px;
+  }
+}
