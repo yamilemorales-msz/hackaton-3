@@ -14,6 +14,8 @@ import RegisterPage from './pages/RegisterPage';
 const EstadoPage = lazy(() => import('./pages/EstadoPage'));
 const FilesPage = lazy(() => import('./pages/FilesPage'));
 const RefinePage = lazy(() => import('./pages/RefinePage'));
+const RefinersPage = lazy(() => import('./pages/RefinersPage'));
+const RefinerEditPage = lazy(() => import('./pages/RefinerEditPage'));
 
 export default function App() {
   return (
@@ -31,6 +33,12 @@ export default function App() {
                   <Route element={<RequirePermission permission="files:read" />}>
                     <Route path="/files" element={<FilesPage />} />
                     <Route path="/files/:id/refine" element={<RefinePage />} />
+                  </Route>
+                  <Route element={<RequirePermission permission="refiners:read" />}>
+                    <Route path="/refiners" element={<RefinersPage />} />
+                  </Route>
+                  <Route element={<RequirePermission permission="refiners:write" />}>
+                    <Route path="/refiners/:id/edit" element={<RefinerEditPage />} />
                   </Route>
                 </Route>
               </Route>

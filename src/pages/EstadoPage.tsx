@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { Alert, buttonClass, ghostButtonClass, inputClass } from '../components/ui';
@@ -70,6 +70,105 @@ function Checks({ value }: { value: unknown }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+interface RosterRow {
+  name: string;
+  code: string;
+}
+
+const EMPTY_ROSTER: RosterRow[] = [
+  { name: '', code: '' },
+  { name: '', code: '' },
+  { name: '', code: '' },
+];
+
+/** Inscripción de los tres integrantes para las rondas de control (PUT /team/roster). */
+function RosterSection() {
+  const roster = useResource<unknown>('/team/roster');
+  const [rows, setRows] = useState<RosterRow[]>(EMPTY_ROSTER);
+  const [save, setSave] = useState<ActionState>(IDLE);
+
+  useEffect(() => {
+    const data = roster.data;
+    if (!isRecord(data) || !Array.isArray(data.members)) return;
+    const members: unknown[] = data.members;
+    if (members.length === 0) return;
+    setRows(
+      EMPTY_ROSTER.map((empty, index) => {
+        const member = members[index];
+        if (!isRecord(member)) return empty;
+        return {
+          name: typeof member.name === 'string' ? member.name : '',
+          code: typeof member.code === 'string' ? member.code : '',
+        };
+      }),
+    );
+  }, [roster.data]);
+
+  const setField = (index: number, field: 'name' | 'code', value: string): void => {
+    setRows((prev) => prev.map((row, i) => (i === index ? { ...row, [field]: value } : row)));
+  };
+
+  const submit = (): void => {
+    setSave({ loading: true, result: null, error: null });
+    const members = rows.map((row) => ({ name: row.name.trim(), code: row.code.trim() }));
+    apiFetch<unknown>('/team/roster', { method: 'PUT', body: { members } })
+      .then((res) => {
+        setSave({ loading: false, result: res.data, error: null });
+      })
+      .catch((error: unknown) => {
+        setSave({ loading: false, result: isApiError(error) ? error.details : null, error: errorMessage(error) });
+      });
+  };
+
+  const locked = isRecord(roster.data) && roster.data.locked === true;
+  const ready = rows.every((row) => row.name.trim().length >= 3 && row.code.trim().length >= 1);
+
+  return (
+    <Section title="Roster (rondas de control)">
+      {roster.error ? <Alert>{roster.error}</Alert> : null}
+      {locked ? <Alert tone="info">El roster ya entró a un sorteo y no se puede editar.</Alert> : null}
+      {rows.map((row, index) => (
+        <div key={index} className="grid grid-cols-1 gap-2 sm:grid-cols-[2fr_1fr]">
+          <div className="flex flex-col gap-1">
+            <label htmlFor={`roster-name-${index}`} className="text-sm">
+              Nombre del integrante {index + 1}
+            </label>
+            <input
+              id={`roster-name-${index}`}
+              type="text"
+              className={inputClass}
+              value={row.name}
+              onChange={(event) => setField(index, 'name', event.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor={`roster-code-${index}`} className="text-sm">
+              Código
+            </label>
+            <input
+              id={`roster-code-${index}`}
+              type="text"
+              className={inputClass}
+              value={row.code}
+              onChange={(event) => setField(index, 'code', event.target.value)}
+            />
+          </div>
+        </div>
+      ))}
+      <button
+        type="button"
+        className={`${buttonClass} self-start`}
+        disabled={save.loading || locked || !ready}
+        onClick={submit}
+      >
+        {save.loading ? 'Guardando…' : 'Guardar roster'}
+      </button>
+      {save.error ? <Alert>{save.error}</Alert> : null}
+      {save.result !== null ? <Json value={save.result} /> : null}
+    </Section>
   );
 }
 
@@ -150,6 +249,8 @@ export default function EstadoPage() {
         {check.error ? <Alert>{check.error}</Alert> : null}
         {check.result !== null ? <Checks value={check.result} /> : null}
       </Section>
+
+      {can('team:manage') ? <RosterSection /> : null}
 
       <Section title="Integraciones">
         {integrations.loading ? <p role="status">Cargando…</p> : null}
